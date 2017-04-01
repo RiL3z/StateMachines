@@ -1,14 +1,54 @@
 <html>
+  <head>
+    <link rel="stylesheet" href="styles.css">
+    <title>State Machines</title>
+  </head>
   <body>
     <h1>State Machines</h1>
     <h2>Summary</h1>
+    <p>Build an object oriented library of data structures and algorithms that facilitates the modelling of state machines, the conversions from one type of state machine to another, and basic visualization of those state machines.</p>
     <h2>Background</h2>
+    <p>I can envision applying parallism to the functioning of NFAs (Non-deterministic Finite State Machines), and also applying parallism to the DFA (Deterministic Finite State Machines) <=> NFA <=> Regular Expression conversion algorithms. Visualizing the state machines may also benefit from parallization.</p>
     <h2>The Challenge</h2>
+    <p>Understanding the fine details of state machines in a theoretical sense is challenging, but also figuring out a way to parallize the string processing (accept or reject) of NFA's and all the conversion algorithms will be challenging. I also think that I will be using a parallel platform that I am not familiar with, so learning the ropes of that will also be a challenge.</p>
     <h2>Resources</h2>
+    <p>I plan on starting the codebase for this project from scratch. I am using a book that I own called "Introduction to the Theory of Computation" by Michael Sipser as my main reference for understanding the workings of state machines and the algorithms that go along with them.</p>
     <h2>Goals and Deliverables</h2>
-    <h3>Goals</h3>
-    <h3>Deliverables</h3>
+    <ul>
+      <li>
+      <h3>Goals</h3>
+      <ul>
+          <li>
+            <h4>Plan to Achieve</h4>
+            <p>I plan to definitely build a library with at least NFA's as a data structure and to utilize parallel processing in the algorithm that decides whether a test string belongs to the langauge the machine is describing (accept or reject). I believe I can achieve this because I have a good understanding of Abstract Data Types and how to implement them. I also have enough displine and focus to read a theoretical text and understand what's in it and what it is trying to say.</p>
+          </li>
+          <li>
+            <h4>Hope to Achieve</h4>
+            <ul>
+              <li>I hope to achieve the parallel DFA <=> NFA <=> Regular Expression conversion algorithms in a parallel fashion, insofar as that is possible.</li>
+              <li>I also hope to achieve basic drawing and state machine visualization</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    <li>
+      <h3>Deliverables</h3>
+      <ul>
+        <li>Class/Object library with DFA, NFA, and Regular Expression data structures and algorithms.</li>
+        <li>Application Programmer Interface Document that informs programmers on the use of the library.</li>
+      </ul>
+    </li>
+  </ul>
     <h2>Platform Choice</h2>
+    <p>This requires more study on my part. I want a programming language and a supporting platform/library that supports object orientation along with parallism on a multitude of parallel-enabled architectures. As far as I can tell, <span class="underline">OpenCL</span> is the main system that addresses that problem. This may change as I do more research, however.</p>
     <h2>Schedule</h2>
+    <ul>
+      <li>Week 1: Install and setup my development environment and write a hello world demo that utilizes the chosen platform.</li>
+      <li>Week 2: NFA Abstract Data Type figured out and the data structure for the ADT implemented so that the NFA object can parallel process test strings that go into the NFA.</li>
+      <li>Week 3: Regular Expression and DFA ADT's undestood and data structures implemented.</li>
+      <li>Week 4: Conversion algorithms implemented and parallized.</li>
+      <li>Week 5: Basic drawing and visualization of state machines.</li>
+      <li>Week 6: Polishing and refactoring.</li>
+    <ul>
   </body>
 </html>
