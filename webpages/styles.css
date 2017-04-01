@@ -1,0 +1,16 @@
+h1, h2, h3, h4 {
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+ul {
+  margin-top: 0px;
+}
+
+p {
+  margin-top: 0px;
+}
+
+span.underline {
+  text-decoration: underline;
+}
