@@ -1,3 +1,6 @@
 # Simple makefile that starts off the project!
-helloworld: HelloWorld.c
-	gcc HelloWorld.c -o helloworld
+helloworld: HelloWorld.cpp
+	g++ HelloWorld.cpp -o helloworld
+
+test: Test.cpp
+	g++ Test.cpp -o test
