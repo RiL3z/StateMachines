@@ -7,6 +7,11 @@ private:
   int denominator;
 
 public:
+  Fraction(int n, int d) {
+    numerator = n;
+    denominator = d;
+  }
+
   int getDenominator() {
     return denominator;
   }
@@ -14,8 +19,10 @@ public:
     return numerator;
   }
 
-  void setNumerator(int n) {
-    numerator = n;
+  void setNumerator(int numerator) {
+    //this keyword is a pointer of type Fraction. Use member access
+    //operator to access members of the pointer type.
+    this->numerator = numerator;
   }
 
   void setDenominator(int d) {
@@ -24,6 +31,6 @@ public:
 };
 
 int main(void) {
-  Fraction f;
-  printf("Expermenting with classes in C++.");
+  Fraction f = Fraction(2, 5);
+  printf("Fraction f is: %d/%d\n", f.getNumerator(), f.getDenominator());
 }
