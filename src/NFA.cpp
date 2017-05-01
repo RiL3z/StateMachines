@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <iostream>
 
+static void *processString(void* arg);
+
 using namespace std;
 
 class NFA {
@@ -125,22 +127,6 @@ public:
     lambda = lambdaLabel;
   }
 
-
-  static void *processString(void* expression) {
-    //Keep track of where this thread is in the reading process.
-    string s = *((string*) expression);
-    int readPosition = 0;
-    
-  }
-
-  bool test(string expression) {
-    pthread_t thread;
-    pthread_create(&thread, NULL, processString, (void*) &expression);
-
-    pthread_exit(NULL);
-    return false;
-  }
-
   string toString() {
     string retString = "{NFA: [" + startState.toString();
 
@@ -174,12 +160,42 @@ public:
   }
 };
 
+//Define a new structure the bundles the expression with the
+//NFA
+struct arg {
+  NFA nfa;
+  string exp;
+};
+
+void *processString(void *bundle) {
+  //Keep track of where this thread is in the reading process.
+  //struct arg data = *((struct arg *) bundle);
+  //string exp = data.exp;
+  //NFA nfa = data.nfa;
+  int readPosition = 0;
+  pthread_exit(NULL);
+  //cout << exp;
+}
+
+bool test(NFA nfa, string expression) {
+  pthread_t thread;
+  cout << "here";
+  struct arg bundle = {nfa, expression};
+  int t = 0;
+  pthread_create(&thread, NULL, processString, (void*) &t);
+  cout << "here";
+  pthread_exit(NULL);
+  cout << "here";
+  return false;
+}
+
 int main() {
   NFA nfa;
   nfa.addStartState("q1");
   nfa.addTransition("q1",'a', "q1");
   nfa.addFinalState("q1");
   string nfaString = nfa.toString();
-  nfa.test("kelan");
+  string testString = "kelan";
+  test(nfa, testString);
   cout << nfaString;
 }
