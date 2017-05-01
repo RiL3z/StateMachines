@@ -132,7 +132,29 @@ public:
       }
     }
     //then for normal states
+    for(int i = 0; i < normalStates.size(); i ++) {
+      if(normalStates[i].getName() == stateName) {
+        vector<Transition> transitions = startState.getTransitions();
+        for(int i = 0; i < transitions.size(); i ++) {
+          if(transitions[i].getInputSymbol() == c)
+          states.push_back(transitions[i].getNextState());
+        }
+      }
+    }
+
     //then for final states
+    for(int i = 0; i < finalStates.size(); i ++) {
+      if(startState.getName() != finalStates[i].getName()) {
+        if(finalStates[i].getName() == stateName) {
+          vector<Transition> transitions = startState.getTransitions();
+          for(int i = 0; i < transitions.size(); i ++) {
+            if(transitions[i].getInputSymbol() == c)
+            states.push_back(transitions[i].getNextState());
+          }
+        }
+      }
+    }
+
     return states;
   }
 
@@ -200,6 +222,7 @@ public:
 //Define a new structure the bundles the expression with the
 //NFA
 struct arg {
+  string startState;
   NFA nfa;
   string exp;
 };
@@ -244,7 +267,7 @@ void *processString(void *bundle) {
 
 bool test(NFA nfa, string expression) {
   pthread_t thread;
-  struct arg bundle = {nfa, expression};
+  struct arg bundle = {nfa.getStartState(), nfa, expression};
   int t = 0;
   pthread_create(&thread, NULL, processString, (void*) &bundle);
 
@@ -254,9 +277,13 @@ bool test(NFA nfa, string expression) {
 
 int main() {
   NFA nfa;
+  nfa.setLambda('e');
   nfa.addStartState("q1");
+  nfa.addState()
   nfa.addTransition("q1",'a', "q1");
   nfa.addFinalState("q1");
+  vector<string> states = nfa.getStatesForTransition("q1", 'a');
+  cout << states[0];
   string nfaString = nfa.toString();
   bool inLanguage = test(nfa, "kelan");
   bool inLanguage2 = test(nfa, "aaaab");
