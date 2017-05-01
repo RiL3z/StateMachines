@@ -57,6 +57,16 @@ private:
       return transitions;
     }
 
+    /*vector<Transition> getEmptyTransitions() {
+      vector<Transition> emptyTransitions;
+      for(int i = 0; i < transitions.size(); i ++) {
+        if(transitions[i] == lambda) {
+          emptyTransitions.push_back(transitions[i]);
+        }  
+      } 
+      return emptyTransitions;
+    }*/
+
     string getName() {
       return stateName;
     }
@@ -134,7 +144,7 @@ public:
     //then for normal states
     for(int i = 0; i < normalStates.size(); i ++) {
       if(normalStates[i].getName() == stateName) {
-        vector<Transition> transitions = startState.getTransitions();
+        vector<Transition> transitions = normalStates[i].getTransitions();
         for(int i = 0; i < transitions.size(); i ++) {
           if(transitions[i].getInputSymbol() == c)
           states.push_back(transitions[i].getNextState());
@@ -146,7 +156,7 @@ public:
     for(int i = 0; i < finalStates.size(); i ++) {
       if(startState.getName() != finalStates[i].getName()) {
         if(finalStates[i].getName() == stateName) {
-          vector<Transition> transitions = startState.getTransitions();
+          vector<Transition> transitions = finalStates[i].getTransitions();
           for(int i = 0; i < transitions.size(); i ++) {
             if(transitions[i].getInputSymbol() == c)
             states.push_back(transitions[i].getNextState());
@@ -184,6 +194,10 @@ public:
 
   void setLambda(char lambdaLabel) {
     lambda = lambdaLabel;
+  }
+
+  char getLambda() {
+    return lambda;
   }
 
   string toString() {
@@ -232,15 +246,27 @@ struct arg {
 bool accepted = false;
 
 void *processString(void *bundle) {
-  //Reset for every call.
-  accepted = false;
   //Keep track of where this thread is in the reading process.
   struct arg data = *((struct arg *) bundle);
   string exp = data.exp;
+  string startState = data.startState;
   NFA nfa = data.nfa;
-  string currentState = nfa.getStartState();
+  string currentState = startState;
   //Check for e moves first
+  char lambda = nfa.getLambda();
+  vector<string> teleportStates = nfa.getStatesForTransition(currentState, lambda);
+  //Create an array of pthreads for every state that we teleport to.
+  pthread_t threads[teleportStates.size()];
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+  for(int i = 0; i < teleportStates.size(); i ++) {
+    struct arg newBundle = {teleportStates[i], nfa, exp};
+    cout << teleportStates[i];
+    pthread_create(&threads[i], &attr, processString, (void*) &newBundle);
+
+  }
   //Then check to see if the character read has any transitions
   //defined for it.
   for(int i = 0; i < exp.length(); i ++) {
@@ -253,24 +279,27 @@ void *processString(void *bundle) {
 
       }
     }
-    else {
-      return NULL;
-    }
   }
 
   if(nfa.isFinalState(currentState)) {
     accepted = true;
   }
 
+  for(int i = 0; i < teleportStates.size(); i ++) {
+    pthread_join(threads[i], NULL);
+  }
+  
   pthread_exit(NULL);
 }
 
 bool test(NFA nfa, string expression) {
+  accepted = false;
   pthread_t thread;
   struct arg bundle = {nfa.getStartState(), nfa, expression};
-  int t = 0;
-  pthread_create(&thread, NULL, processString, (void*) &bundle);
-
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+  pthread_create(&thread, &attr, processString, (void*) &bundle);
   pthread_join(thread, NULL);
   return accepted;
 }
@@ -278,15 +307,20 @@ bool test(NFA nfa, string expression) {
 int main() {
   NFA nfa;
   nfa.setLambda('e');
-  nfa.addStartState("q1");
-  nfa.addState()
-  nfa.addTransition("q1",'a', "q1");
-  nfa.addFinalState("q1");
-  vector<string> states = nfa.getStatesForTransition("q1", 'a');
-  cout << states[0];
+  nfa.addStartState("q0");
+  nfa.addState("q1");
+  nfa.addState("q2");
+  nfa.addState("q3");
+  nfa.addTransition("q0", 'e', "q1");
+  nfa.addTransition("q0",'e', "q2");
+  nfa.addTransition("q0", 'e', "q3");
+
+  vector<string> states = nfa.getStatesForTransition("q0", 'e');
+  //cout << states.size();
   string nfaString = nfa.toString();
   bool inLanguage = test(nfa, "kelan");
-  bool inLanguage2 = test(nfa, "aaaab");
-  cout << boolalpha;
-  cout << inLanguage2;
+  //bool inLanguage2 = test(nfa, "aaaab");
+  cout << inLanguage;
+  //cout << inLanguage2;
+  pthread_exit(NULL);
 }
