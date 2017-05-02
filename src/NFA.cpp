@@ -334,25 +334,28 @@ bool test(const NFA &nfa, const string &expression) {
   return accepted;
 }
 
-/*int main() {
+void test1() {
   NFA nfa;
   nfa.setLambda('e');
   nfa.addStartState("q0");
   nfa.addState("q1");
   nfa.addState("q2");
   nfa.addFinalState("q3");
+  nfa.addFinalState("q4");
+  nfa.addFinalState("q5"); 
   nfa.addTransition("q0", 'a', "q1");
-  nfa.addTransition("q0",'a', "q2");
-  nfa.addTransition("q0", 'a', "q3");
-  nfa.addTransition("q3", 'a', "q3");
-  //cout << nfa.isFinalState("q3");
-  vector<string> states = nfa.getStatesForTransition("q0", 'e');
-  //cout << states.size();
-  string nfaString = nfa.toString();
-  string testString = "aaa";
-  bool inLanguage = test(nfa, testString);
-  //bool inLanguage2 = test(nfa, "aaaab");
-  cout << inLanguage;
-  //cout << inLanguage2;
-  //pthread_exit(NULL);
-}*/
+  nfa.addTransition("q0", 'a', "q2");
+  nfa.addTransition("q2", 'c', "q2");
+  nfa.addTransition("q2", 'e', "q3");
+  nfa.addTransition("q3", 'b', "q3");
+  nfa.addTransition("q1", 'e', "q4");
+  nfa.addTransition("q1", 'e', "q5");
+  nfa.addTransition("q4", 'a', "q4");
+  nfa.addTransition("q5", 'b', "q5"); 
+  cout << "NFA structure to test: " << endl;
+  cout << nfa.toString() << endl;
+}
+
+int main(void) {
+  test1();
+}
