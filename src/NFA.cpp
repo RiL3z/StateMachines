@@ -277,23 +277,44 @@ void *processString(void *bundle) {
 
   //Then check to see if the character read has any transitions
   //defined for it.
-  for(int i = 0; i < expr.length(); i ++) {
-    vector<string> nextStates = nfa.getStatesForTransition(currentState, expr[i]);
+  int j = 0;
+  struct arg newArgs2[nfa.getStatesForTransition(currentState, expr[j]).size()];
+  pthread_t threads2[nfa.getStatesForTransition(currentState, expr[j]).size()];
+  for(; j < expr.length(); j ++) {
+    vector<string> nextStates = nfa.getStatesForTransition(currentState, expr[j]);
     if(nextStates.size() != 0) {
       if(nextStates.size() == 1) {
         currentState = nextStates[0];
       }
       else {
         //more parallel processing here
+        for(int k = 0; k < nextStates.size(); k ++) {
+          if(currentState != nextStates[k]) {
+            struct arg newBundle;
+            newBundle.startState = nextStates[k];
+            newBundle.nfa = nfa; 
+            newBundle.expr = expr.substr(j+1, expr.length());
+            newArgs2[j] = newBundle;
+            pthread_create(&threads[k], &attr, processString, (void*) &newArgs2[k]);
+          }
+        }
+        break;
       }
     }
-    pthread_exit(NULL);
+    else {
+      pthread_exit(NULL);
+    }
+    j++;
   }
 
   if(nfa.isFinalState(currentState)) {
     accepted = true;
   }
 
+  for(int i = 0; i < nfa.getStatesForTransition(currentState, expr[j]).size(); i ++) {
+    pthread_join(threads2[i], NULL);
+  }
+  
   for(int i = 0; i < teleportStates.size(); i ++) {
     pthread_join(threads[i], NULL);
   }
@@ -320,9 +341,9 @@ int main() {
   nfa.addState("q1");
   nfa.addState("q2");
   nfa.addFinalState("q3");
-  nfa.addTransition("q0", 'e', "q1");
-  nfa.addTransition("q0",'e', "q2");
-  nfa.addTransition("q0", 'e', "q3");
+  nfa.addTransition("q0", 'a', "q1");
+  nfa.addTransition("q0",'a', "q2");
+  nfa.addTransition("q0", 'a', "q3");
   nfa.addTransition("q3", 'a', "q3");
   //cout << nfa.isFinalState("q3");
   vector<string> states = nfa.getStatesForTransition("q3", 'a');
@@ -331,7 +352,7 @@ int main() {
   string testString = "aaa";
   bool inLanguage = test(nfa, testString);
   //bool inLanguage2 = test(nfa, "aaaab");
-  cout << inLanguage;
+  cout << std::endl << inLanguage;
   //cout << inLanguage2;
   //pthread_exit(NULL);
 }
