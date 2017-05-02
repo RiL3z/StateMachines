@@ -290,12 +290,13 @@ void *processString(void *bundle) {
         //more parallel processing here
         for(int k = 0; k < nextStates.size(); k ++) {
           if(currentState != nextStates[k]) {
+            //cout << nextStates[k];
             struct arg newBundle;
             newBundle.startState = nextStates[k];
             newBundle.nfa = nfa; 
-            newBundle.expr = expr.substr(j+1, expr.length());
-            newArgs2[j] = newBundle;
-            pthread_create(&threads[k], &attr, processString, (void*) &newArgs2[k]);
+            newBundle.expr = expr.substr(j+1, expr.length() - 1);
+            newArgs2[k] = newBundle;
+            pthread_create(&threads2[k], &attr, processString, (void*) &newArgs2[k]);
           }
         }
         break;
@@ -318,7 +319,6 @@ void *processString(void *bundle) {
   for(int i = 0; i < teleportStates.size(); i ++) {
     pthread_join(threads[i], NULL);
   }
-
   pthread_exit(NULL);
 }
 
@@ -334,7 +334,7 @@ bool test(const NFA &nfa, const string &expression) {
   return accepted;
 }
 
-int main() {
+/*int main() {
   NFA nfa;
   nfa.setLambda('e');
   nfa.addStartState("q0");
@@ -346,13 +346,13 @@ int main() {
   nfa.addTransition("q0", 'a', "q3");
   nfa.addTransition("q3", 'a', "q3");
   //cout << nfa.isFinalState("q3");
-  vector<string> states = nfa.getStatesForTransition("q3", 'a');
+  vector<string> states = nfa.getStatesForTransition("q0", 'e');
   //cout << states.size();
   string nfaString = nfa.toString();
   string testString = "aaa";
   bool inLanguage = test(nfa, testString);
   //bool inLanguage2 = test(nfa, "aaaab");
-  cout << std::endl << inLanguage;
+  cout << inLanguage;
   //cout << inLanguage2;
   //pthread_exit(NULL);
-}
+}*/

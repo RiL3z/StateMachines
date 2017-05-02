@@ -3,7 +3,9 @@
  * data structures are working correctly.
  */
 #include <stdio.h>
+#include "NFA.cpp"
 
 int main(void) {
+  NFA nfa;  
   return 0;
 }
