@@ -30,7 +30,13 @@ public:
   }
 };
 
+struct t {
+  Fraction f;
+};
+
 int main(void) {
   Fraction f = Fraction(2, 5);
-  printf("Fraction f is: %d/%d\n", f.getNumerator(), f.getDenominator());
+  struct t f1 = {f};
+  struct t f2 = {f};
+  printf("Fraction f is: %d/%d\n", f2.f.getNumerator(), f.getDenominator());
 }

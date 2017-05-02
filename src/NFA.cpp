@@ -18,18 +18,18 @@ private:
       this->nextState = nextState;
     }
 
-    string toString() {
+    string toString() const {
       string retString = "(";
       retString += inputSymbol;
       retString += "->" + nextState + ")";
       return retString;
     }
 
-    string getNextState() {
+    string getNextState() const {
       return nextState;
     }
 
-    char getInputSymbol() {
+    char getInputSymbol() const {
       return inputSymbol;
     }
   };
@@ -53,7 +53,7 @@ private:
       transitions.push_back(t);
     }
 
-    vector<Transition> getTransitions() {
+    vector<Transition> getTransitions() const {
       return transitions;
     }
 
@@ -62,18 +62,18 @@ private:
       for(int i = 0; i < transitions.size(); i ++) {
         if(transitions[i] == lambda) {
           emptyTransitions.push_back(transitions[i]);
-        }  
-      } 
+        }
+      }
       return emptyTransitions;
     }*/
 
-    string getName() {
+    string getName() const {
       return stateName;
     }
 
     //Get a string representation of this state for display
     //purposes.
-    string toString() {
+    string toString() const {
       string retString = "{" + stateName + ": ";
       int count = transitions.size();
       for(int i = 0; i < count; i ++) {
@@ -129,7 +129,7 @@ public:
     }
   }
 
-  vector<string> getStatesForTransition(string stateName, char c) {
+  vector<string> getStatesForTransition(string stateName, char c) const {
     vector<string> states;
     //check for start state
     if(startStateAdded) {
@@ -173,7 +173,7 @@ public:
     finalStates.push_back(s);
   }
 
-  bool isFinalState(string label) {
+  bool isFinalState(string label) const {
     for(int i = 0; i < finalStates.size(); i ++) {
       if(label == finalStates[i].getName()) {
         return true;
@@ -188,7 +188,7 @@ public:
     startStateAdded = true;
   }
 
-  string getStartState() {
+  string getStartState() const {
     return startState.getName();
   }
 
@@ -196,11 +196,11 @@ public:
     lambda = lambdaLabel;
   }
 
-  char getLambda() {
+  char getLambda() const {
     return lambda;
   }
 
-  string toString() {
+  string toString() const {
     string retString = "{NFA: [" + startState.toString();
 
     int count = normalStates.size();
@@ -263,10 +263,10 @@ void *processString(void *bundle) {
 
   for(int i = 0; i < teleportStates.size(); i ++) {
     struct arg newBundle = {teleportStates[i], nfa, exp};
-    cout << teleportStates[i];
     pthread_create(&threads[i], &attr, processString, (void*) &newBundle);
-
+    pthread_join(threads[i], NULL);
   }
+
   //Then check to see if the character read has any transitions
   //defined for it.
   for(int i = 0; i < exp.length(); i ++) {
@@ -279,20 +279,21 @@ void *processString(void *bundle) {
 
       }
     }
+    return NULL;
   }
 
   if(nfa.isFinalState(currentState)) {
     accepted = true;
   }
 
-  for(int i = 0; i < teleportStates.size(); i ++) {
+  /*for(int i = 0; i < teleportStates.size(); i ++) {
     pthread_join(threads[i], NULL);
-  }
-  
+  }*/
+
   pthread_exit(NULL);
 }
 
-bool test(NFA nfa, string expression) {
+bool test(const NFA &nfa, const string &expression) {
   accepted = false;
   pthread_t thread;
   struct arg bundle = {nfa.getStartState(), nfa, expression};
@@ -310,7 +311,7 @@ int main() {
   nfa.addStartState("q0");
   nfa.addState("q1");
   nfa.addState("q2");
-  nfa.addState("q3");
+  nfa.addFinalState("q3");
   nfa.addTransition("q0", 'e', "q1");
   nfa.addTransition("q0",'e', "q2");
   nfa.addTransition("q0", 'e', "q3");
@@ -318,9 +319,10 @@ int main() {
   vector<string> states = nfa.getStatesForTransition("q0", 'e');
   //cout << states.size();
   string nfaString = nfa.toString();
-  bool inLanguage = test(nfa, "kelan");
+  string testString = "kelan";
+  bool inLanguage = test(nfa, testString);
   //bool inLanguage2 = test(nfa, "aaaab");
   cout << inLanguage;
   //cout << inLanguage2;
-  pthread_exit(NULL);
+  //pthread_exit(NULL);
 }
