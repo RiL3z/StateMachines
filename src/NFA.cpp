@@ -158,8 +158,9 @@ public:
         if(finalStates[i].getName() == stateName) {
           vector<Transition> transitions = finalStates[i].getTransitions();
           for(int i = 0; i < transitions.size(); i ++) {
-            if(transitions[i].getInputSymbol() == c)
-            states.push_back(transitions[i].getNextState());
+            if(transitions[i].getInputSymbol() == c) {
+              states.push_back(transitions[i].getNextState());
+            }
           }
         }
       }
@@ -252,6 +253,7 @@ void *processString(void *bundle) {
   string startState = data.startState;
   NFA nfa = data.nfa;
   string currentState = startState;
+  cout << currentState;
   //Check for e moves first
   char lambda = nfa.getLambda();
   vector<string> teleportStates = nfa.getStatesForTransition(currentState, lambda);
@@ -261,12 +263,15 @@ void *processString(void *bundle) {
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-  struct arg newBundle;
+  struct arg newArgs[teleportStates.size()];
+  
   for(int i = 0; i < teleportStates.size(); i ++) {
+    struct arg newBundle;
     newBundle.startState = teleportStates[i];
     newBundle.nfa = nfa;
     newBundle.expr = expr;
-    pthread_create(&threads[i], &attr, processString, (void*) &newBundle);
+    newArgs[i] = newBundle; 
+    pthread_create(&threads[i], &attr, processString, (void*) &newArgs[i]);
     //pthread_join(threads[i], NULL);
   }
 
@@ -279,7 +284,7 @@ void *processString(void *bundle) {
         currentState = nextStates[0];
       }
       else {
-
+        //more parallel processing here
       }
     }
     pthread_exit(NULL);
@@ -318,11 +323,12 @@ int main() {
   nfa.addTransition("q0", 'e', "q1");
   nfa.addTransition("q0",'e', "q2");
   nfa.addTransition("q0", 'e', "q3");
-
-  vector<string> states = nfa.getStatesForTransition("q0", 'e');
+  nfa.addTransition("q3", 'a', "q3");
+  //cout << nfa.isFinalState("q3");
+  vector<string> states = nfa.getStatesForTransition("q3", 'a');
   //cout << states.size();
   string nfaString = nfa.toString();
-  string testString = "kelan";
+  string testString = "aaa";
   bool inLanguage = test(nfa, testString);
   //bool inLanguage2 = test(nfa, "aaaab");
   cout << inLanguage;
