@@ -238,7 +238,7 @@ public:
 struct arg {
   string startState;
   NFA nfa;
-  string exp;
+  string expr;
 };
 
 //shared variable that all threads are working to change to
@@ -248,7 +248,7 @@ bool accepted = false;
 void *processString(void *bundle) {
   //Keep track of where this thread is in the reading process.
   struct arg data = *((struct arg *) bundle);
-  string exp = data.exp;
+  string expr = data.expr;
   string startState = data.startState;
   NFA nfa = data.nfa;
   string currentState = startState;
@@ -261,16 +261,19 @@ void *processString(void *bundle) {
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+  struct arg newBundle;
   for(int i = 0; i < teleportStates.size(); i ++) {
-    struct arg newBundle = {teleportStates[i], nfa, exp};
+    newBundle.startState = teleportStates[i];
+    newBundle.nfa = nfa;
+    newBundle.expr = expr;
     pthread_create(&threads[i], &attr, processString, (void*) &newBundle);
-    pthread_join(threads[i], NULL);
+    //pthread_join(threads[i], NULL);
   }
 
   //Then check to see if the character read has any transitions
   //defined for it.
-  for(int i = 0; i < exp.length(); i ++) {
-    vector<string> nextStates = nfa.getStatesForTransition(currentState, exp[i]);
+  for(int i = 0; i < expr.length(); i ++) {
+    vector<string> nextStates = nfa.getStatesForTransition(currentState, expr[i]);
     if(nextStates.size() != 0) {
       if(nextStates.size() == 1) {
         currentState = nextStates[0];
@@ -279,16 +282,16 @@ void *processString(void *bundle) {
 
       }
     }
-    return NULL;
+    pthread_exit(NULL);
   }
 
   if(nfa.isFinalState(currentState)) {
     accepted = true;
   }
 
-  /*for(int i = 0; i < teleportStates.size(); i ++) {
+  for(int i = 0; i < teleportStates.size(); i ++) {
     pthread_join(threads[i], NULL);
-  }*/
+  }
 
   pthread_exit(NULL);
 }
