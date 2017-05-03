@@ -253,7 +253,7 @@ void *processString(void *bundle) {
   string startState = data.startState;
   NFA nfa = data.nfa;
   string currentState = startState;
-  cout << currentState;
+  //cout << currentState;
   //Check for e moves first
   char lambda = nfa.getLambda();
   vector<string> teleportStates = nfa.getStatesForTransition(currentState, lambda);
@@ -334,7 +334,34 @@ bool test(const NFA &nfa, const string &expression) {
   return accepted;
 }
 
-void test1() {
+void printTest(NFA &nfa, string &testString, int testNum) {
+  cout << "Test " << testNum << endl;
+  cout << "  NFA structure to test: " << endl;
+  cout << "  " << nfa.toString() << endl;
+  cout << "  Testing on input string: " << testString << endl;
+  bool testResult = test(nfa, testString);
+  cout << "  String was: ";
+  if(testResult) {
+    cout << "accepted";
+  } 
+  else {
+    cout << "rejected";
+  }
+  cout << endl;
+}
+
+// The simplest test is for a state machine that accepts the empty string
+void testStartIsFinal() {
+  NFA nfa;
+  nfa.addStartState("q0");
+  nfa.addFinalState("q0"); 
+  string testString = "";
+  printTest(nfa, testString, 0); 
+  testString = "a";
+  printTest(nfa, testString, 1); 
+}
+
+/*void test1() {
   NFA nfa;
   nfa.setLambda('e');
   nfa.addStartState("q0");
@@ -354,8 +381,8 @@ void test1() {
   nfa.addTransition("q5", 'b', "q5"); 
   cout << "NFA structure to test: " << endl;
   cout << nfa.toString() << endl;
-}
+}*/
 
 int main(void) {
-  test1();
+  testStartIsFinal();
 }
