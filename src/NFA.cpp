@@ -256,6 +256,7 @@ void *processString(void *bundle) {
   cout << currentState;
   //Check for e moves first
   char lambda = nfa.getLambda();
+
   vector<string> teleportStates = nfa.getStatesForTransition(currentState, lambda);
   //Create an array of pthreads for every state that we teleport to.
   pthread_t threads[teleportStates.size()];
@@ -264,39 +265,40 @@ void *processString(void *bundle) {
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
   struct arg newArgs[teleportStates.size()];
-  
-  for(int i = 0; i < teleportStates.size(); i ++) {
+
+  vector<pthread_t> threadss;
+
+  for(int j = 0; j < teleportStates.size(); j ++) {
     struct arg newBundle;
-    newBundle.startState = teleportStates[i];
+    newBundle.startState = teleportStates[j];
     newBundle.nfa = nfa;
     newBundle.expr = expr;
-    newArgs[i] = newBundle; 
-    pthread_create(&threads[i], &attr, processString, (void*) &newArgs[i]);
-    //pthread_join(threads[i], NULL);
+    newArgs[j] = newBundle;
+    pthread_create(&threads[j], &attr, processString, (void*) &newArgs[j]);
   }
 
   //Then check to see if the character read has any transitions
   //defined for it.
-  int j = 0;
-  struct arg newArgs2[nfa.getStatesForTransition(currentState, expr[j]).size()];
-  pthread_t threads2[nfa.getStatesForTransition(currentState, expr[j]).size()];
-  for(; j < expr.length(); j ++) {
-    vector<string> nextStates = nfa.getStatesForTransition(currentState, expr[j]);
+  struct arg newArgs2[nfa.getStatesForTransition(currentState, expr[0]).size()];
+  pthread_t threads2[nfa.getStatesForTransition(currentState, expr[0]).size()];
+  for(int i = 0; i < expr.length(); i ++) {
+    vector<string> nextStates = nfa.getStatesForTransition(currentState, expr[i]);
+
     if(nextStates.size() != 0) {
       if(nextStates.size() == 1) {
         currentState = nextStates[0];
       }
       else {
         //more parallel processing here
-        for(int k = 0; k < nextStates.size(); k ++) {
-          if(currentState != nextStates[k]) {
+        for(int j = 0; j < nextStates.size(); j ++) {
+          if(currentState != nextStates[j]) {
             //cout << nextStates[k];
             struct arg newBundle;
-            newBundle.startState = nextStates[k];
-            newBundle.nfa = nfa; 
-            newBundle.expr = expr.substr(j+1, expr.length() - 1);
-            newArgs2[k] = newBundle;
-            pthread_create(&threads2[k], &attr, processString, (void*) &newArgs2[k]);
+            newBundle.startState = nextStates[j];
+            newBundle.nfa = nfa;
+            newBundle.expr = expr.substr(i+1, expr.length() - 1);
+            newArgs2[j] = newBundle;
+            pthread_create(&threads2[j], &attr, processString, (void*) &newArgs2[j]);
           }
         }
         break;
@@ -305,17 +307,16 @@ void *processString(void *bundle) {
     else {
       pthread_exit(NULL);
     }
-    j++;
   }
 
   if(nfa.isFinalState(currentState)) {
     accepted = true;
   }
 
-  for(int i = 0; i < nfa.getStatesForTransition(currentState, expr[j]).size(); i ++) {
+  for(int i = 0; i < nfa.getStatesForTransition(currentState, expr[0]).size(); i ++) {
     pthread_join(threads2[i], NULL);
   }
-  
+
   for(int i = 0; i < teleportStates.size(); i ++) {
     pthread_join(threads[i], NULL);
   }
@@ -342,18 +343,31 @@ void test1() {
   nfa.addState("q2");
   nfa.addFinalState("q3");
   nfa.addFinalState("q4");
-  nfa.addFinalState("q5"); 
+  nfa.addFinalState("q5");
   nfa.addTransition("q0", 'a', "q1");
-  nfa.addTransition("q0", 'a', "q2");
+  /*nfa.addTransition("q0", 'a', "q2");
   nfa.addTransition("q2", 'c', "q2");
   nfa.addTransition("q2", 'e', "q3");
-  nfa.addTransition("q3", 'b', "q3");
+  nfa.addTransition("q3", 'b', "q3");*/
   nfa.addTransition("q1", 'e', "q4");
   nfa.addTransition("q1", 'e', "q5");
-  nfa.addTransition("q4", 'a', "q4");
-  nfa.addTransition("q5", 'b', "q5"); 
+  /*nfa.addTransition("q4", 'a', "q4");
+  nfa.addTransition("q5", 'b', "q5");*/
   cout << "NFA structure to test: " << endl;
   cout << nfa.toString() << endl;
+
+  //Come up with some strings to test...
+  string tests[] = {"acccb"};
+
+  for(int i = 0; i < 1; i ++) {
+    cout << "String '" << tests[i] << "' was: ";
+    if(test(nfa, tests[i])) {
+      cout << "accepted." << endl;
+    }
+    else {
+      cout << "rejected." << endl;
+    }
+  }
 }
 
 int main(void) {
