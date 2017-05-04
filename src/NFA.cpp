@@ -261,6 +261,7 @@ void *processString(void *bundle) {
   string startState = data.startState;
   NFA nfa = data.nfa;
   string currentState = startState;
+
   char lambda = nfa.getLambda();
 
   //All threads are joinable
@@ -268,27 +269,74 @@ void *processString(void *bundle) {
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-
   //keep track of all threads that were created...
   vector<pthread_t> threads;
-  //Keep all of the different thread arguments in memory.
   vector<arg> args;
 
-  while(expr != "") {
-    vector<string> transitions = nfa.getStatesForTransition(currentState, lambda);
+  bool loop = true;
+
+  while(loop) {
+    vector<string> transitions = nfa.getStatesForTransition(currentState, expr[0]);
     vector<string> teleportTransitions = nfa.getStatesForTransition(currentState, lambda);
 
     bool emptyTransitions = teleportTransitions.size() > 0;
+    bool multipleTransitions = transitions.size() > 1;
 
     if(emptyTransitions) {
       //create a thread for every empty transition
       for(int i = 0; i < teleportTransitions.size(); i ++) {
-        struct arg newBundle;
         pthread_t thread;
-        pthread_create(&thread, &attr, processString, (void*)
+        struct arg *newBundle = new arg;
+        newBundle->startState = teleportTransitions[i];
+        newBundle->nfa = nfa;
+        newBundle->expr = expr;
+        args.push_back(*newBundle);
+        pthread_create(&thread, &attr, processString, (void*) newBundle);
+        threads.push_back(thread);
       }
     }
+
+    if(multipleTransitions) {
+      //create a thread for every new transition
+      for(int i = 0; i < transitions.size(); i ++) {
+        pthread_t thread;
+        struct arg *newBundle = new arg;
+        newBundle->startState = transitions[i];
+        newBundle->nfa = nfa;
+        newBundle->expr = expr.substr(1, expr.length() - 1);
+        args.push_back(*newBundle);
+        pthread_create(&thread, &attr, processString, (void*) newBundle);
+        threads.push_back(thread);
+      }
+    }
+
+    if(transitions.size() == 1) {
+      currentState = transitions[0];
+      if(expr.length() != 1) {
+        expr = expr.substr(1, expr.length() - 1);
+      }
+      else {
+        expr = "";
+      }
+    }
+    else {
+      loop = false;
+    }
   }
+
+  for(int i = 0; i < threads.size(); i ++) {
+    pthread_join(threads[i], NULL);
+  }
+
+  /*for(int i = 0; i < args.size(); i ++) {
+    delete &args[i];
+  }*/
+
+  if(nfa.isFinalState(currentState) && expr.length() == 0) {
+    accepted = true;
+  }
+
+  pthread_exit(NULL);
 
   /*
   //cout << currentState;
@@ -356,10 +404,9 @@ void *processString(void *bundle) {
   for(int i = 0; i < teleportStates.size(); i ++) {
     pthread_join(threads[i], NULL);
   }*/
-  pthread_exit(NULL);
 }
 
-bool test(const NFA &nfa, const string &expression) {
+bool parallelTest(const NFA &nfa, const string &expression) {
   accepted = false;
   pthread_t thread;
   struct arg bundle = {nfa.getStartState(), nfa, expression};
@@ -376,13 +423,13 @@ void printTest(NFA &nfa, string &testString, int testNum) {
   cout << "  NFA structure to test: " << endl;
   cout << "  " << nfa.toString() << endl;
   cout << "  Testing on input string: " << testString << endl;
-  bool testResult = test(nfa, testString);
+  bool testResult = parallelTest(nfa, testString);
   cout << "  String was: ";
   if(testResult) {
-    cout << "accepted";
+    cout << "ACCEPTED";
   }
   else {
-    cout << "rejected";
+    cout << "REJECTED";
   }
   cout << endl;
 }
@@ -491,11 +538,11 @@ void testMachine() {
 
   cout << endl;
 
-  string test1 = "aaaa";
-  printTest(nfa, test1, 0);
-
-  string test2 = "";
-  printTest(nfa, test2, 1);
+  string testStrings[] = {"", "aaaa", "bbbb", "bba", "abaaa", ""};
+  for(int i = 0; i < 6; i ++) {
+    printTest(nfa, testStrings[i], i);
+    cout << endl;
+  }
 }
 
 void testNoEmptyTransitions() {
