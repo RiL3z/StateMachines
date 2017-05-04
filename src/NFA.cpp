@@ -2,6 +2,9 @@
 #include <vector>
 #include <pthread.h>
 #include <iostream>
+#include <sys/time.h>
+#include <iomanip>
+#include <fstream>
 
 using namespace std;
 
@@ -328,82 +331,11 @@ void *processString(void *bundle) {
     pthread_join(threads[i], NULL);
   }
 
-  /*for(int i = 0; i < args.size(); i ++) {
-    delete &args[i];
-  }*/
-
   if(nfa.isFinalState(currentState) && expr.length() == 0) {
     accepted = true;
   }
 
   pthread_exit(NULL);
-
-  /*
-  //cout << currentState;
-  //Check for e moves first
-  vector<string> teleportStates = nfa.getStatesForTransition(currentState, lambda);
-  //Create an array of pthreads for every state that we teleport to.
-  pthread_t threads[teleportStates.size()];
-  pthread_attr_t attr;
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-  struct arg newArgs[teleportStates.size()];
-
-  vector<pthread_t> threadss;
-
-  for(int j = 0; j < teleportStates.size(); j ++) {
-    struct arg newBundle;
-    newBundle.startState = teleportStates[j];
-    newBundle.nfa = nfa;
-    newBundle.expr = expr;
-    newArgs[j] = newBundle;
-    pthread_create(&threads[j], &attr, processString, (void*) &newArgs[j]);
-  }
-
-  //Then check to see if the character read has any transitions
-  //defined for it.
-  struct arg newArgs2[nfa.getStatesForTransition(currentState, expr[0]).size()];
-  pthread_t threads2[nfa.getStatesForTransition(currentState, expr[0]).size()];
-  for(int i = 0; i < expr.length(); i ++) {
-    vector<string> nextStates = nfa.getStatesForTransition(currentState, expr[i]);
-
-    if(nextStates.size() != 0) {
-      if(nextStates.size() == 1) {
-        currentState = nextStates[0];
-      }
-      else {
-        //more parallel processing here
-        for(int j = 0; j < nextStates.size(); j ++) {
-          if(currentState != nextStates[j]) {
-            //cout << nextStates[k];
-            struct arg newBundle;
-            newBundle.startState = nextStates[j];
-            newBundle.nfa = nfa;
-            newBundle.expr = expr.substr(i+1, expr.length() - 1);
-            newArgs2[j] = newBundle;
-            pthread_create(&threads2[j], &attr, processString, (void*) &newArgs2[j]);
-          }
-        }
-        break;
-      }
-    }
-    else {
-      pthread_exit(NULL);
-    }
-  }
-
-  if(nfa.isFinalState(currentState)) {
-    accepted = true;
-  }
-
-  for(int i = 0; i < nfa.getStatesForTransition(currentState, expr[0]).size(); i ++) {
-    pthread_join(threads2[i], NULL);
-  }
-
-  for(int i = 0; i < teleportStates.size(); i ++) {
-    pthread_join(threads[i], NULL);
-  }*/
 }
 
 bool parallelTest(const NFA &nfa, const string &expression) {
@@ -418,12 +350,72 @@ bool parallelTest(const NFA &nfa, const string &expression) {
   return accepted;
 }
 
-void printTest(NFA &nfa, string &testString, int testNum) {
+void serialTestFunc(string startState, NFA nfa, string expr) {
+  string currentState = startState;
+  char lambda = nfa.getLambda();
+
+  bool loop = true;
+
+  while(loop) {
+    vector<string> transitions = nfa.getStatesForTransition(currentState, expr[0]);
+    vector<string> teleportTransitions = nfa.getStatesForTransition(currentState, lambda);
+
+    bool emptyTransitions = teleportTransitions.size() > 0;
+    bool multipleTransitions = transitions.size() > 1;
+
+    if(emptyTransitions) {
+      for(int i = 0; i < teleportTransitions.size(); i ++) {
+        serialTestFunc(teleportTransitions[i], nfa, expr);
+      }
+    }
+
+    if(multipleTransitions) {
+      //create a thread for every new transition
+      for(int i = 0; i < transitions.size(); i ++) {
+        string expression = expr.substr(1, expr.length() - 1);
+        serialTestFunc(transitions[i], nfa, expression);
+      }
+    }
+
+    if(transitions.size() == 1) {
+      currentState = transitions[0];
+      if(expr.length() != 1) {
+        expr = expr.substr(1, expr.length() - 1);
+      }
+      else {
+        expr = "";
+      }
+    }
+    else {
+      loop = false;
+    }
+  }
+
+  if(nfa.isFinalState(currentState) && expr.length() == 0) {
+    accepted = true;
+  }
+}
+
+bool serialTest(NFA nfa, string expr) {
+  accepted = false;
+  serialTestFunc(nfa.getStartState(), nfa, expr);
+  return accepted;
+}
+
+void printTest(NFA &nfa, string &testString, int testNum, bool parallel, bool expr) {
   cout << "String Test " << testNum << endl;
   cout << "  NFA structure to test: " << endl;
   cout << "  " << nfa.toString() << endl;
-  cout << "  Testing on input string: " << testString << endl;
-  bool testResult = parallelTest(nfa, testString);
+  if(expr) {
+    cout << "  Testing on input string: " << testString << endl;
+  }
+  bool testResult;
+  if(parallel) {
+    testResult = parallelTest(nfa, testString);
+  }
+  else {
+    testResult = serialTest(nfa, testString);
+  }
   cout << "  String was: ";
   if(testResult) {
     cout << "ACCEPTED";
@@ -432,17 +424,6 @@ void printTest(NFA &nfa, string &testString, int testNum) {
     cout << "REJECTED";
   }
   cout << endl;
-}
-
-// The simplest test is for a state machine that accepts the empty string
-void testStartIsFinal() {
-  NFA nfa;
-  nfa.addStartState("q0");
-  nfa.addFinalState("q0");
-  string testString = "";
-  printTest(nfa, testString, 0);
-  testString = "a";
-  printTest(nfa, testString, 1);
 }
 
 string getVectorAsString(vector<string> &vect) {
@@ -487,6 +468,29 @@ void testTransition(NFA &nfa, string state, char input, int testNum, vector<stri
   }
 }
 
+void printDashes(int n) {
+  for(int i = 0; i < n; i ++) {
+    cout << "-";
+  }
+  cout << endl;
+}
+
+long long start_timer() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+// Prints the time elapsed since the specified time
+long long stop_timer(long long start_time, std::string name) {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	long long end_time = tv.tv_sec * 1000000 + tv.tv_usec;
+  std::cout << setprecision(5);
+	std::cout << name << ": " << ((float) (end_time - start_time)) / (1000 * 1000) << " sec\n";
+	return end_time - start_time;
+}
+
 void testMachine() {
   NFA nfa;
   nfa.setLambda('e');
@@ -507,6 +511,9 @@ void testMachine() {
   nfa.addTransition("q5", 'b', "q5");
   nfa.addTransition("q5", 'a', "q4");
 
+  int numDashes = 80;
+  printDashes(numDashes);
+  cout << "NFA DATA STRUCTURE TESTS" << endl;
   cout << "NFA structure to test: " << endl;
   cout << nfa.toString() << endl << endl;
   vector<string> nextStates1;
@@ -535,59 +542,83 @@ void testMachine() {
   vector<string> nextStates8;
   nextStates8.push_back("q4");
   testTransition(nfa, "q5", 'a', 7, nextStates8);
-
-  cout << endl;
-
-  string testStrings[] = {"", "aaaa", "bbbb", "bba", "abaaa", ""};
-  for(int i = 0; i < 6; i ++) {
-    printTest(nfa, testStrings[i], i);
+  printDashes(numDashes);
+  cout << "SERIAL ALGORITHM TESTS" << endl << endl;
+  string testStrings[] = {"", "aaaa", "bbbb", "bba", "abaaa", "baab", "b", "bbbaabbbaa"};
+  printDashes(numDashes);
+  int numTests = 8;
+  long long timeElapsed[numTests];
+  for(int i = 0; i <numTests; i ++) {
+    long long startTime = start_timer();
+    printTest(nfa, testStrings[i], i, false, true);
+    stop_timer(startTime, "  time taken");
     cout << endl;
   }
+  printDashes(numDashes);
+  cout << "PARALLEL ALGORITHM TESTS" << endl << endl;
+  for(int i = 0; i < numTests; i ++) {
+    long long startTime = start_timer();
+    printTest(nfa, testStrings[i], i, true, true);
+    stop_timer(startTime, "  time taken");
+    cout << endl;
+  }
+  printDashes(numDashes);
 }
 
-void testNoEmptyTransitions() {
-  NFA nfa;
-  nfa.addStartState("q0");
-  nfa.addFinalState("q0");
+int main(int argc, char **argv) {
+  if(argc == 1) {
+    testMachine();
+  }
+  else if(argc > 1) {
+    NFA nfa;
+    nfa.setLambda('e');
+    nfa.addStartState("q0");
+    nfa.addFinalState("q1");
+    nfa.addState("q2");
+    nfa.addFinalState("q3");
+    nfa.addFinalState("q4");
+    nfa.addState("q5");
+    nfa.addTransition("q0", 'e', "q1");
+    nfa.addTransition("q0", 'e', "q2");
+    nfa.addTransition("q1", 'a', "q1");
+    nfa.addTransition("q2", 'b', "q3");
+    nfa.addTransition("q2", 'b', "q4");
+    nfa.addTransition("q3", 'b', "q3");
+    nfa.addTransition("q4", 'b', "q4");
+    nfa.addTransition("q4", 'a', "q5");
+    nfa.addTransition("q5", 'b', "q5");
+    nfa.addTransition("q5", 'a', "q4");
 
+    if(argc == 2) {
+      string pOrS = argv[1];
+      ifstream read("teststrings");
+      string testString;
+      getline(read, testString);
 
-}
-
-/*void test1() {
-  NFA nfa;
-  nfa.setLambda('e');
-  nfa.addStartState("q0");
-  nfa.addState("q1");
-  nfa.addState("q2");
-  nfa.addFinalState("q3");
-  nfa.addFinalState("q4");
-  nfa.addFinalState("q5");
-  nfa.addTransition("q0", 'a', "q1");
-  nfa.addTransition("q0", 'a', "q2");
-  nfa.addTransition("q2", 'c', "q2");
-  nfa.addTransition("q2", 'e', "q3");
-  nfa.addTransition("q3", 'b', "q3");
-  nfa.addTransition("q1", 'e', "q4");
-  nfa.addTransition("q1", 'e', "q5");
-  nfa.addTransition("q4", 'a', "q4");
-  nfa.addTransition("q5", 'b', "q5");
-  cout << "NFA structure to test: " << endl;
-  cout << nfa.toString() << endl;
-
-  //Come up with some strings to test...
-  string tests[] = {"acccb"};
-
-  for(int i = 0; i < 1; i ++) {
-    cout << "String '" << tests[i] << "' was: ";
-    if(test(nfa, tests[i])) {
-      cout << "accepted." << endl;
+      if(pOrS[0] == 'p' || pOrS[0] == 'P') {
+        long long startTime = start_timer();
+        printTest(nfa, testString, 0, true, false);
+        stop_timer(startTime, "  time taken");
+      }
+      else {
+        long long startTime = start_timer();
+        printTest(nfa, testString, 0, false, false);
+        stop_timer(startTime, "  time taken");
+      }
     }
-    else {
-      cout << "rejected." << endl;
+    else if(argc == 3){
+      string testString = argv[1];
+      string pOrS = argv[2];
+      if(pOrS[0] == 'p' || pOrS[0] == 'P') {
+        long long startTime = start_timer();
+        printTest(nfa, testString, 0, true, true);
+        stop_timer(startTime, "  time taken");
+      }
+      else {
+        long long startTime = start_timer();
+        printTest(nfa, testString, 0, false, true);
+        stop_timer(startTime, "  time taken");
+      }
     }
   }
-}*/
-
-int main(void) {
- testMachine();
 }
