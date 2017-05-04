@@ -16,12 +16,13 @@
       <li>One starting state that the machine begins execution in.</li>
       <li>A set of final states. If the machine is in any one final state when all the input is read, the machine accepts the string as belonging to the language it describes.</li>
     </ul>
-    <h3>From this description, an abstract data type can be imagined that supports the following update methods:</h3>
+    <h3>From this description, an abstract data type can be imagined that supports the following methods:</h3>
     <ul>
       <li>addState(label): Adds a state to the machine with the given label. Labels should be unique so one state is always distinguishable from another.</li>
       <li>addTransition(state, symbol, nextState): Adds a transition from one state to another.</li>
       <li>addFinalState(label): Adds a final state to the machine.</li>
       <li>NFA(startLabel): Creates an NFA object with the start state labeled with startLabel.</li>
+      <li>test(expression): Runs the machine on the expression string in order to determine if it is acceptable or not.</li>
     </ul>
   </body>
 </html>
