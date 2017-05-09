@@ -1,0 +1,22 @@
+test(input, startState) {
+  currentState <-- startState
+  while(input is not empty) {
+    emptyTransitions <-- get empty transitions for currentState
+    if(number of empty transitions > 0) {
+      for each(empty transition) {
+        newState <-- transition's next state
+        test(input, newState);
+      }
+    }
+    transitions <-- get transitions for input[0] (first character in input) and currentState combination
+    for each(transition in transitions) {
+      newState <-- transition's next state
+      newInput <-- input loses first character
+      test(newInput, newState)
+    }
+  }
+
+  if(input is empty and currentState is a final state) {
+    string is accepted
+  }
+}
